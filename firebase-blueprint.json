@@ -1,0 +1,143 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "Represents a student user on the platform.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "displayName": { "type": "string" },
+        "email": { "type": "string" },
+        "phone": { "type": "string" },
+        "collegeName": { "type": "string" },
+        "location": { "type": "string" },
+        "avatarUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "displayName", "email", "collegeName", "createdAt"]
+    },
+    "Listing": {
+      "title": "Listing",
+      "description": "Represents an item listed for sale by a student.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "price": { "type": "number" },
+        "category": { 
+          "type": "string",
+          "enum": ["Books", "Electronics", "Bikes", "Hostel Items", "Fashion", "Others"]
+        },
+        "images": { 
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "sellerId": { "type": "string" },
+        "sellerName": { "type": "string" },
+        "collegeName": { "type": "string" },
+        "location": { "type": "string" },
+        "whatsappNumber": { "type": "string" },
+        "status": { 
+          "type": "string",
+          "enum": ["active", "sold", "reported"]
+        },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" },
+        "favoritesCount": { "type": "number" }
+      },
+      "required": ["title", "price", "category", "sellerId", "collegeName", "status", "createdAt"]
+    },
+    "Favorite": {
+      "title": "Favorite",
+      "description": "Represents a listing favorited by a user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "listingId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "listingId", "createdAt"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "Represents a report or flag on an inappropriate listing.",
+      "type": "object",
+      "properties": {
+        "listingId": { "type": "string" },
+        "reporterId": { "type": "string" },
+        "reason": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["listingId", "reporterId", "reason", "createdAt"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "Represents a conversation between two students.",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array", "items": { "type": "string" } },
+        "lastMessage": { "type": "string" },
+        "lastMessageTime": { "type": "string", "format": "date-time" },
+        "listingId": { "type": "string" },
+        "listingTitle": { "type": "string" }
+      },
+      "required": ["participants", "lastMessage", "lastMessageTime"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message in a chat.",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["senderId", "text", "createdAt"]
+    },
+    "Order": {
+      "title": "Order",
+      "description": "Represents a purchase transaction.",
+      "type": "object",
+      "properties": {
+        "buyerId": { "type": "string" },
+        "sellerId": { "type": "string" },
+        "listingId": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "completed", "cancelled"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["buyerId", "sellerId", "listingId", "amount", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/listings/{listingId}": {
+      "schema": "Listing",
+      "description": "Product listings"
+    },
+    "/users/{userId}/favorites/{listingId}": {
+      "schema": "Favorite",
+      "description": "User's favorite listings"
+    },
+    "/listings/{listingId}/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Reports on listings"
+    },
+    "/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Conversations"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": "Message",
+      "description": "Messages in a conversation"
+    },
+    "/orders/{orderId}": {
+      "schema": "Order",
+      "description": "Transaction records"
+    }
+  }
+}

@@ -1,0 +1,149 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // --- Entity Validations ---
+
+    function isValidUser(data) {
+      return data.uid == request.auth.uid 
+        && data.displayName is string && data.displayName.size() > 0 && data.displayName.size() <= 100
+        && data.email is string && data.email.size() <= 100
+        && data.collegeName is string && data.collegeName.size() > 0 && data.collegeName.size() <= 200
+        && (data.get('phone', '') is string && data.get('phone', '').size() <= 20)
+        && (data.get('location', '') is string && data.get('location', '').size() <= 200)
+        && (data.get('avatarUrl', '') is string && data.get('avatarUrl', '').size() <= 500)
+        && data.createdAt == request.time;
+    }
+
+    function isValidListing(data) {
+      return data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.description is string && data.description.size() <= 2000
+        && data.price is number && data.price >= 0
+        && data.category in ['Books', 'Electronics', 'Bikes', 'Hostel Items', 'Fashion', 'Others']
+        && data.sellerId == request.auth.uid
+        && data.sellerName is string && data.sellerName.size() > 0
+        && data.collegeName is string && data.collegeName.size() > 0
+        && data.status in ['active', 'sold', 'reported']
+        && data.get('images', []).size() <= 10
+        && (data.get('whatsappNumber', '') is string && data.get('whatsappNumber', '').size() <= 20)
+        && (data.get('location', '') is string && data.get('location', '').size() <= 200)
+        && data.createdAt is timestamp;
+    }
+
+    function isValidReport(data) {
+      return data.listingId is string && isValidId(data.listingId)
+        && data.reporterId == request.auth.uid
+        && data.reason is string && data.reason.size() > 0 && data.reason.size() <= 1000
+        && data.createdAt == request.time;
+    }
+
+    function isValidFavorite(data, lId) {
+      return data.userId == request.auth.uid 
+        && data.listingId == lId
+        && data.createdAt == request.time;
+    }
+
+    function isValidChat(data) {
+      return data.participants is list && data.participants.size() == 2
+        && data.participants.hasAll([request.auth.uid])
+        && data.lastMessage is string && data.lastMessage.size() <= 500
+        && data.lastMessageTime is timestamp
+        && (data.get('listingId', '') is string && data.get('listingId', '').size() <= 128)
+        && (data.get('listingTitle', '') is string && data.get('listingTitle', '').size() <= 200);
+    }
+
+    function isValidMessage(data) {
+      return data.senderId == request.auth.uid
+        && data.text is string && data.text.size() > 0 && data.text.size() <= 1000
+        && data.createdAt == request.time;
+    }
+
+    // --- Collection Routes ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn(); // Users can view other student profiles
+      allow list: if false; // No blanket listing of users
+      allow create: if isOwner(userId) && isValidUser(incoming());
+      allow update: if isOwner(userId) 
+        && incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'phone', 'collegeName', 'location', 'avatarUrl'])
+        && incoming().uid == existing().uid
+        && incoming().createdAt == existing().createdAt;
+    }
+
+    match /listings/{listingId} {
+      allow get: if true; // Individual items are public
+      allow list: if resource.data.status == 'active'; // Public marketplace only shows active items
+      allow create: if isSignedIn() && isValidId(listingId) && isValidListing(incoming()) 
+        && incoming().createdAt == request.time;
+      allow update: if isOwner(existing().sellerId) && isValidId(listingId)
+        && (
+          // Action: Edit
+          (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'price', 'category', 'images', 'whatsappNumber', 'location', 'status'])
+           && isValidListing(incoming()))
+        );
+      allow delete: if isOwner(existing().sellerId);
+
+      // Reports subcollection
+      match /reports/{reportId} {
+        allow create: if isSignedIn() && isValidId(reportId) && isValidReport(incoming());
+        allow read: if false; // Only admins (if any) could read reports
+      }
+    }
+
+    match /users/{userId}/favorites/{listingId} {
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId) && isValidId(listingId) && isValidFavorite(incoming(), listingId);
+      allow delete: if isOwner(userId);
+    }
+
+    // --- Chat & Messages ---
+    match /chats/{chatId} {
+      allow list: if isSignedIn() && resource.data.participants.hasAny([request.auth.uid]);
+      allow get: if isSignedIn() && (resource == null || resource.data.participants.hasAny([request.auth.uid]));
+      allow create: if isSignedIn() && isValidChat(incoming());
+      allow update: if isSignedIn() && existing().participants.hasAny([request.auth.uid])
+        && (incoming().diff(existing()).affectedKeys().hasOnly(['lastMessage', 'lastMessageTime']))
+        && incoming().lastMessage is string && incoming().lastMessageTime is timestamp;
+      
+      match /messages/{messageId} {
+        allow list: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid]);
+        allow create: if isSignedIn() && get(/databases/$(database)/documents/chats/$(chatId)).data.participants.hasAny([request.auth.uid])
+          && isValidMessage(incoming());
+      }
+    }
+
+    // --- Orders ---
+    match /orders/{orderId} {
+      allow list: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+      allow get: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid);
+      allow create: if isSignedIn() && incoming().buyerId == request.auth.uid && incoming().createdAt == request.time;
+      allow update: if isSignedIn() && (resource.data.buyerId == request.auth.uid || resource.data.sellerId == request.auth.uid)
+        && incoming().diff(existing()).affectedKeys().hasOnly(['status']);
+    }
+  }
+}
