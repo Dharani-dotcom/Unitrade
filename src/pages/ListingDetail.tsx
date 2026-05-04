@@ -3,9 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { doc, getDoc, collection, setDoc, deleteDoc, serverTimestamp, query, where, getDocs, writeBatch } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 import { useAuthState } from '@/src/components/AuthContext';
-import { Listing, OperationType } from '@/src/types';
+import { Listing, ListingCondition, OperationType } from '@/src/types';
 import { handleFirestoreError, formatPrice } from '@/src/lib/utils';
-import { MapPin, Clock, MessageCircle, Heart, Share2, AlertTriangle, ChevronLeft, User, MessageSquare, LayoutDashboard } from 'lucide-react';
+import { MapPin, Clock, MessageCircle, Heart, Share2, AlertTriangle, ChevronLeft, User, MessageSquare, LayoutDashboard, Store, Recycle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { motion } from 'motion/react';
 
@@ -173,6 +173,17 @@ export default function ListingDetail() {
               <span className="bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
                 {listing.category}
               </span>
+              {listing.condition === ListingCondition.New ? (
+                <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  <Store className="w-3 h-3" />
+                  Campus Store (New)
+                </span>
+              ) : (
+                <span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1">
+                  <Recycle className="w-3 h-3" />
+                  Used Market
+                </span>
+              )}
               <div className="flex items-center gap-1 text-xs text-gray-400 font-medium">
                 <Clock className="w-3 h-3" />
                 <span>Posted {timeAgo}</span>

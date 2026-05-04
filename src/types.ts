@@ -24,12 +24,18 @@ export interface UserProfile {
   createdAt: any;
 }
 
+export enum ListingCondition {
+  New = 'New',
+  Used = 'Used'
+}
+
 export interface Listing {
   id: string;
   title: string;
   description: string;
   price: number;
   category: ListingCategory;
+  condition: ListingCondition;
   images: string[];
   sellerId: string;
   sellerName: string;

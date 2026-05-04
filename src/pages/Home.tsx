@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { collection, query, where, orderBy, getDocs, limit, onSnapshot } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
-import { Listing, ListingCategory, OperationType } from '@/src/types';
+import { Listing, ListingCategory, ListingCondition, OperationType } from '@/src/types';
 import ListingCard from '@/src/components/ListingCard';
 import { handleFirestoreError } from '@/src/lib/utils';
-import { Search, Filter, Book, Laptop, Bike, Home as HomeIcon, Shirt, Grid, ShoppingBag } from 'lucide-react';
+import { Search, Filter, Book, Laptop, Bike, Home as HomeIcon, Shirt, Grid, ShoppingBag, Store, Recycle } from 'lucide-react';
 
 const CATEGORIES = [
   { name: ListingCategory.Books, icon: Book },
@@ -19,6 +19,7 @@ export default function Home() {
   const [listings, setListings] = useState<Listing[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<ListingCategory | null>(null);
+  const [selectedCondition, setSelectedCondition] = useState<ListingCondition | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
@@ -27,16 +28,14 @@ export default function Home() {
       listingsRef, 
       where('status', '==', 'active'),
       orderBy('createdAt', 'desc'),
-      limit(24)
     );
 
     if (selectedCategory) {
-      q = query(listingsRef, 
-        where('status', '==', 'active'),
-        where('category', '==', selectedCategory),
-        orderBy('createdAt', 'desc'),
-        limit(24)
-      );
+      q = query(q, where('category', '==', selectedCategory));
+    }
+
+    if (selectedCondition) {
+      q = query(q, where('condition', '==', selectedCondition));
     }
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -48,7 +47,7 @@ export default function Home() {
     });
 
     return () => unsubscribe();
-  }, [selectedCategory]);
+  }, [selectedCategory, selectedCondition]);
 
   const filteredListings = listings.filter(item => 
     item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -58,34 +57,69 @@ export default function Home() {
   return (
     <div className="space-y-8 pb-12">
       {/* Hero Section */}
-      <section className="relative h-[300px] md:h-[400px] rounded-3xl overflow-hidden bg-indigo-900">
+      <section className="relative h-[250px] md:h-[300px] rounded-3xl overflow-hidden bg-indigo-900 shadow-2xl">
         <img 
           src="https://picsum.photos/seed/uni/1200/600" 
           alt="Campus Background" 
-          className="absolute inset-0 w-full h-full object-cover opacity-40 mix-blend-overlay"
+          className="absolute inset-0 w-full h-full object-cover opacity-30 mix-blend-overlay"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-6">
-          <h1 className="text-4xl md:text-6xl font-sans font-extrabold text-white tracking-tight">
-            Campus Marketplace <br />
-            <span className="text-indigo-300">Simplified.</span>
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 space-y-4">
+          <h1 className="text-3xl md:text-5xl font-sans font-extrabold text-white tracking-tight leading-tight">
+            Campus Marketplace
           </h1>
-          <p className="text-indigo-100 text-lg md:text-xl max-w-2xl font-medium">
-            Buy and sell textbooks, electronics, and bikes with your college mates securely.
-          </p>
           
           <div className="w-full max-w-xl relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors" />
             <input 
               type="text" 
               placeholder="What are you looking for today?" 
-              className="w-full bg-white rounded-2xl py-4 pl-12 pr-6 text-gray-900 shadow-xl focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all"
+              className="w-full bg-white rounded-2xl py-3.5 pl-12 pr-6 text-gray-900 shadow-xl focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
       </section>
+
+      {/* Secondary Navbar / Type Toggle */}
+      <div className="sticky top-20 z-10 py-4 -mt-4 bg-gray-50/80 backdrop-blur-md rounded-b-3xl">
+        <div className="flex justify-center gap-2 max-w-md mx-auto p-1 bg-white rounded-2xl shadow-sm border border-gray-100">
+          <button
+            onClick={() => setSelectedCondition(null)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              selectedCondition === null 
+              ? 'bg-indigo-600 text-white shadow-md' 
+              : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <Grid className="w-4 h-4" />
+            All Items
+          </button>
+          <button
+            onClick={() => setSelectedCondition(ListingCondition.New)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              selectedCondition === ListingCondition.New 
+              ? 'bg-green-600 text-white shadow-md' 
+              : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <Store className="w-4 h-4" />
+            Campus Store
+          </button>
+          <button
+            onClick={() => setSelectedCondition(ListingCondition.Used)}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl font-bold text-sm transition-all ${
+              selectedCondition === ListingCondition.Used 
+              ? 'bg-orange-500 text-white shadow-md' 
+              : 'text-gray-500 hover:bg-gray-50'
+            }`}
+          >
+            <Recycle className="w-4 h-4" />
+            Used Market
+          </button>
+        </div>
+      </div>
 
       {/* Categories */}
       <section>

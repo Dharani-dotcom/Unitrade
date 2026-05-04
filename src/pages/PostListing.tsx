@@ -3,9 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/src/lib/firebase';
 import { useAuthState } from '@/src/components/AuthContext';
-import { ListingCategory, ListingStatus, OperationType } from '@/src/types';
+import { ListingCategory, ListingCondition, ListingStatus, OperationType } from '@/src/types';
 import { handleFirestoreError } from '@/src/lib/utils';
-import { Camera, IndianRupee, Tag, Info, AlertCircle, Grid } from 'lucide-react';
+import { Camera, IndianRupee, Tag, Info, AlertCircle, Grid, PackageCheck } from 'lucide-react';
 
 export default function PostListing() {
   const { user, profile } = useAuthState();
@@ -17,6 +17,7 @@ export default function PostListing() {
     description: '',
     price: '',
     category: ListingCategory.Others,
+    condition: ListingCondition.Used,
     location: '',
     whatsappNumber: '',
     imageUrl: '',
@@ -48,6 +49,7 @@ export default function PostListing() {
         description: formData.description,
         price: parseFloat(formData.price),
         category: formData.category,
+        condition: formData.condition,
         images: [formData.imageUrl || `https://picsum.photos/seed/${Date.now()}/800/600`],
         sellerId: user.uid,
         sellerName: profile?.displayName || 'Anonymous',
@@ -92,21 +94,22 @@ export default function PostListing() {
           />
         </div>
 
+        <div className="space-y-2">
+          <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+            <IndianRupee className="w-4 h-4 text-indigo-500" />
+            Price (₹)
+          </label>
+          <input 
+            required
+            type="number" 
+            placeholder="0"
+            className="w-full bg-gray-50 border-0 rounded-2xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none"
+            value={formData.price}
+            onChange={e => setFormData({...formData, price: e.target.value})}
+          />
+        </div>
+
         <div className="grid grid-cols-2 gap-4">
-          <div className="space-y-2">
-            <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
-              <IndianRupee className="w-4 h-4 text-indigo-500" />
-              Price (₹)
-            </label>
-            <input 
-              required
-              type="number" 
-              placeholder="0"
-              className="w-full bg-gray-50 border-0 rounded-2xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none"
-              value={formData.price}
-              onChange={e => setFormData({...formData, price: e.target.value})}
-            />
-          </div>
           <div className="space-y-2">
             <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
               <Grid className="w-4 h-4 text-indigo-500" />
@@ -120,6 +123,20 @@ export default function PostListing() {
               {Object.values(ListingCategory).map(cat => (
                 <option key={cat} value={cat}>{cat}</option>
               ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-bold text-gray-700 flex items-center gap-2">
+              <PackageCheck className="w-4 h-4 text-indigo-500" />
+              Condition
+            </label>
+            <select 
+              className="w-full bg-gray-50 border-0 rounded-2xl p-4 focus:ring-2 focus:ring-indigo-500 outline-none appearance-none"
+              value={formData.condition}
+              onChange={e => setFormData({...formData, condition: e.target.value as ListingCondition})}
+            >
+              <option value={ListingCondition.Used}>Used / Pre-loved</option>
+              <option value={ListingCondition.New}>New / First-hand</option>
             </select>
           </div>
         </div>

@@ -1,8 +1,8 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Clock, Heart, MessageSquare } from 'lucide-react';
+import { MapPin, Clock, Heart, MessageSquare, Store, Recycle } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
-import { Listing } from '@/src/types';
+import { Listing, ListingCondition } from '@/src/types';
 import { formatPrice } from '@/src/lib/utils';
 import { motion } from 'motion/react';
 
@@ -29,8 +29,22 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, isFavorite, onToggle
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-indigo-600">
-          {listing.category}
+        <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none">
+          <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-indigo-600 shadow-sm">
+            {listing.category}
+          </div>
+          {listing.condition === ListingCondition.New && (
+            <div className="bg-green-500/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white shadow-sm flex items-center gap-1">
+              <Store className="w-3 h-3" />
+              Store
+            </div>
+          )}
+          {listing.condition === ListingCondition.Used && (
+            <div className="bg-orange-500/90 backdrop-blur-sm px-2.5 py-1 rounded-lg text-[10px] font-bold uppercase tracking-wider text-white shadow-sm flex items-center gap-1">
+              <Recycle className="w-3 h-3" />
+              Used
+            </div>
+          )}
         </div>
         {onToggleFavorite && (
           <button 

@@ -29,6 +29,10 @@
           "type": "string",
           "enum": ["Books", "Electronics", "Bikes", "Hostel Items", "Fashion", "Others"]
         },
+        "condition": { 
+          "type": "string",
+          "enum": ["New", "Used"]
+        },
         "images": { 
           "type": "array",
           "items": { "type": "string" }

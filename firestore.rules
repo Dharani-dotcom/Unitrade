@@ -45,6 +45,7 @@ service cloud.firestore {
         && data.description is string && data.description.size() <= 2000
         && data.price is number && data.price >= 0
         && data.category in ['Books', 'Electronics', 'Bikes', 'Hostel Items', 'Fashion', 'Others']
+        && data.condition in ['New', 'Used']
         && data.sellerId == request.auth.uid
         && data.sellerName is string && data.sellerName.size() > 0
         && data.collegeName is string && data.collegeName.size() > 0
@@ -103,7 +104,7 @@ service cloud.firestore {
       allow update: if isOwner(existing().sellerId) && isValidId(listingId)
         && (
           // Action: Edit
-          (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'price', 'category', 'images', 'whatsappNumber', 'location', 'status'])
+          (incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'price', 'category', 'condition', 'images', 'whatsappNumber', 'location', 'status'])
            && isValidListing(incoming()))
         );
       allow delete: if isOwner(existing().sellerId);
